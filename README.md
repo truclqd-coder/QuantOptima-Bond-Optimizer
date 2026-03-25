@@ -38,4 +38,4 @@ The next phase of this project involves replacing manual user "Views" with:
 - **NLP Sentiment Analysis:** Scrapping Fed meeting minutes to automate "Hawkish/Dovish" tilts.
 
 ---
-*Developed by Truc Nguyen, MSF, MSc candidate in AI - Data Analytics specialization, Product Support Specialist & Knowledge Lead at Moody's Analytics, Inc.*
+*Developed by Truc Nguyen, MSFinMath, MSc candidate in AI - Data Analytics specialization, Product Support Specialist & Knowledge Lead at Moody's Analytics, Inc.*
