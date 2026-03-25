@@ -25,7 +25,7 @@ prices_df, mkt_caps, durations = get_bond_market_data()
 
 # --- 3. SIDEBAR: AI MODEL CALIBRATION ---
 st.sidebar.header("🤖 AI Model Calibration")
-st.sidebar.markdown("Adjust return expectations and market assumptions to update the AI model.")
+st.sidebar.markdown("Adjust return expectations and market assumptions to update the Bayesian Inference AI model.")
 
 views = {}
 
