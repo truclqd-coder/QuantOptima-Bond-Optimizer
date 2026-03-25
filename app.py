@@ -24,7 +24,7 @@ prices_df, mkt_caps = get_bond_market_data()
 
 # --- 3. SIDEBAR: THE INPUTS ---
 st.sidebar.header("🕹️ Portfolio Controls")
-st.sidebar.markdown("Modify market assumptions to rebalance the portfolio.")
+st.sidebar.markdown("Modify market assumptions to rebalance the portfolio in real-time.")
 
 views = {}
 for ticker in ["HIGH_YIELD_BB", "EM_SOVEREIGN"]:
