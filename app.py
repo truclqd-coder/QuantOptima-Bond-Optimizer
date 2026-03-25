@@ -23,41 +23,62 @@ def get_bond_market_data():
 
 prices_df, mkt_caps, durations = get_bond_market_data()
 
-# --- 3. SIDEBAR: AI SIGNAL CALIBRATION ---
-st.sidebar.header("🤖 AI Signal Calibration")
-st.sidebar.markdown("Define active signals to update the Bayesian generative model.")
+# --- 3. SIDEBAR: AI-ENHANCED MARKET FORECASTS ---
+st.sidebar.header("🤖 AI Market Forecasts")
+st.sidebar.markdown("Input your return expectations to update the AI's Bayesian model.")
 
 views = {}
 
 with st.sidebar:
-    # --- CATEGORY 1: AI CONVICTION ---
-    st.subheader("🧠 Model Conviction")
+    # --- CATEGORY 1: AI MODEL CONVICTION ---
+    st.subheader("🧠 AI Model Conviction")
     tau = st.select_slider(
         "Bayesian Confidence (τ)", 
         options=[0.01, 0.05, 0.1], 
         value=0.05,
-        help="**Bayesian Confidence (τ):** Controls the 'Learning Rate' of the AI relative to market history."
+        help="**Bayesian Confidence (τ):** Controls the 'Learning Rate' of the AI.\n\n"
+             "* **Low (0.01):** Anchors heavily to market history.\n"
+             "* **High (0.10):** Aggressively tilts toward your AI-driven forecasts."
     )
     
     st.divider()
     
-    # --- CATEGORY 2: AI SECTORAL SIGNALS ---
-    st.subheader("📡 AI Sectoral Signals")
-    core_tickers = ["MUNI_BOND", "US_TREASURY_10Y", "CORP_BOND_AAA"]
-    for ticker in core_tickers:
-        views[ticker] = st.slider(f"{ticker} Signal (%)", 0.0, 15.0, 4.0, step=0.5, key=f"s_{ticker}") / 100
+    # --- CATEGORY 2: AI CORE MARKET FORECASTS ---
+    st.subheader("🏦 AI Core Forecasts")
+    
+    views["MUNI_BOND"] = st.slider(
+        "MUNI_BOND (%)", 0.0, 15.0, 4.0, step=0.5, key="s_muni",
+        help="**Muni Bond:** Tax-exempt debt issued by local governments. Forecast the expected annual total return for this short-duration sector."
+    ) / 100
+    
+    views["US_TREASURY_10Y"] = st.slider(
+        "US_TREASURY_10Y (%)", 0.0, 15.0, 4.0, step=0.5, key="s_ust",
+        help="**US Treasury 10Y:** The global benchmark for risk-free rates. Forecast the annual return for 10-year government debt."
+    ) / 100
+    
+    views["CORP_BOND_AAA"] = st.slider(
+        "CORP_BOND_AAA (%)", 0.0, 15.0, 5.0, step=0.5, key="s_aaa",
+        help="**Corp Bond AAA:** Highest-quality corporate credit with minimal default risk. Forecast the annual return including the credit spread."
+    ) / 100
 
     st.divider()
 
-    # --- CATEGORY 3: TACTICAL AI OVERLAYS ---
-    st.subheader("🔥 Tactical AI Overlays")
-    tactical_tickers = ["HIGH_YIELD_BB", "EM_SOVEREIGN"]
-    for ticker in tactical_tickers:
-        views[ticker] = st.slider(f"{ticker} Signal (%)", 0.0, 15.0, 7.0, step=0.5, key=f"s_{ticker}") / 100
+    # --- CATEGORY 3: AI TACTICAL RISK FORECASTS ---
+    st.subheader("🔥 AI Tactical Forecasts")
+    
+    views["HIGH_YIELD_BB"] = st.slider(
+        "HIGH_YIELD_BB (%)", 0.0, 15.0, 7.0, step=0.5, key="s_hy",
+        help="**High Yield BB:** Corporate debt rated just below investment grade. Forecast the annual return based on 'Crossover' spread expectations."
+    ) / 100
+    
+    views["EM_SOVEREIGN"] = st.slider(
+        "EM_SOVEREIGN (%)", 0.0, 15.0, 8.0, step=0.5, key="s_em",
+        help="**EM Sovereign:** Government bonds from Emerging Market nations. Forecast returns while considering geopolitical and currency volatility."
+    ) / 100
 
 # --- 4. MAIN DASHBOARD ---
 st.title("⚖️ QuantOptima: Black-Litterman Bond Optimizer")
-st.info("🧬 **AI Status:** Bayesian Inference Engine active. Synthesizing market priors with active signals.")
+st.info("🧬 **AI Status:** Bayesian Inference Engine active. Computing Posterior distribution from input forecasts.")
 st.markdown("---")
 
 try:
@@ -80,16 +101,16 @@ try:
     ret, vol, sharpe = ef.portfolio_performance(risk_free_rate=0.0)
 
     # --- ROW 1: YIELD CURVE ---
-    st.header("📈 AI-Augmented Yield Curve Shift")
+    st.header("📈 AI-Optimized Yield Curve")
     curve_df = pd.DataFrame({
         "Duration": durations,
-        "Market Prior": prior_returns.values * 100,
-        "AI Posterior": bl_rets.values * 100
+        "Market Neutral": prior_returns.values * 100,
+        "AI Optimized": bl_rets.values * 100
     }).sort_values("Duration")
 
     fig_curve = go.Figure()
-    fig_curve.add_trace(go.Scatter(x=curve_df["Duration"], y=curve_df["Market Prior"], mode='lines+markers', name="Market Prior (Benchmark)", line=dict(color='#CBD5E0', dash='dash')))
-    fig_curve.add_trace(go.Scatter(x=curve_df["Duration"], y=curve_df["AI Posterior"], mode='lines+markers', name="AI-Augmented Posterior", line=dict(color='#3182CE', width=4)))
+    fig_curve.add_trace(go.Scatter(x=curve_df["Duration"], y=curve_df["Market Neutral"], mode='lines+markers', name="Market Prior (Neutral)", line=dict(color='#CBD5E0', dash='dash')))
+    fig_curve.add_trace(go.Scatter(x=curve_df["Duration"], y=curve_df["AI Optimized"], mode='lines+markers', name="AI-Optimized Posterior", line=dict(color='#3182CE', width=4)))
     fig_curve.update_layout(height=400, xaxis_title="Duration (Years)", yaxis_title="Exp. Return (%)", legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"))
     st.plotly_chart(fig_curve, use_container_width=True)
 
@@ -98,7 +119,7 @@ try:
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("AI Asset Allocation: Prior vs. Posterior")
+        st.subheader("AI Asset Allocation")
         mkt_total = sum(mkt_caps.values())
         mkt_w = [mkt_caps[t]/mkt_total for t in cleaned_weights.keys()]
         opt_w = [cleaned_weights[t] for t in cleaned_weights.keys()]
@@ -110,14 +131,14 @@ try:
         st.plotly_chart(fig_bar, use_container_width=True)
     
     with col2:
-        st.subheader("AI Return Profile (%)")
-        st.dataframe(pd.DataFrame({"Market Prior": prior_returns, "AI Posterior": bl_rets}).style.format("{:.2%}"), use_container_width=True)
+        st.subheader("AI Return Comparison (%)")
+        st.dataframe(pd.DataFrame({"Market Neutral": prior_returns, "AI Optimized": bl_rets}).style.format("{:.2%}"), use_container_width=True)
 
     # --- ROW 3: KPI METRICS ---
     st.divider()
     k1, k2, k3 = st.columns(3)
     k1.metric("AI Exp. Return", f"{ret:.2%}")
-    k2.metric("Portfolio Risk", f"{vol:.2%}")
+    k2.metric("AI Risk (Vol)", f"{vol:.2%}")
     k3.metric("AI Sharpe Ratio", f"{sharpe:.2f}")
 
 except Exception as e:
