@@ -108,4 +108,59 @@ try:
 
     fig_curve = go.Figure()
     fig_curve.add_trace(go.Scatter(
-        x=curve_df["Duration"],
+        x=curve_df["Duration"], 
+        y=curve_df["Market History"], 
+        mode='lines+markers', 
+        name="Market Equilibrium (Prior)", 
+        line=dict(color='#CBD5E0', dash='dash')
+    ))
+    fig_curve.add_trace(go.Scatter(
+        x=curve_df["Duration"], 
+        y=curve_df["AI Optimized"], 
+        mode='lines+markers', 
+        name="AI-Optimized Posterior", 
+        line=dict(color='#3182CE', width=4)
+    ))
+    fig_curve.update_layout(
+        height=400, 
+        xaxis_title="Duration (Years)", 
+        yaxis_title="Expected Return (%)", 
+        legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center")
+    )
+    st.plotly_chart(fig_curve, use_container_width=True)
+
+    # --- ROW 2: ALLOCATION & DATA ---
+    st.divider()
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("Market Equilibrium vs. AI-Optimized Weights")
+        mkt_total = sum(mkt_caps.values())
+        mkt_w = [mkt_caps[t]/mkt_total for t in cleaned_weights.keys()]
+        opt_w = [cleaned_weights[t] for t in cleaned_weights.keys()]
+        
+        fig_bar = go.Figure()
+        fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=mkt_w, name="Market Equilibrium (Prior)", marker_color='#E2E8F0'))
+        fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=opt_w, name="AI-Optimized Weights (Posterior)", marker_color='#3182CE'))
+        fig_bar.update_layout(barmode='group', height=350, legend=dict(orientation="h", y=1.1))
+        st.plotly_chart(fig_bar, use_container_width=True)
+    
+    with col2:
+        st.subheader("Expected Return Comparison")
+        st.dataframe(
+            pd.DataFrame({
+                "Market Equilibrium": prior_returns, 
+                "AI-Optimized": bl_rets
+            }).style.format("{:.2%}"), 
+            use_container_width=True
+        )
+
+    # --- ROW 3: KPI METRICS ---
+    st.divider()
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Exp. Annual Return", f"{ret:.2%}")
+    k2.metric("Portfolio Risk", f"{vol:.2%}")
+    k3.metric("Sharpe Ratio", f"{sharpe:.2f}")
+
+except Exception as e:
+    st.error(f"🚨 Model Error: {e}")
