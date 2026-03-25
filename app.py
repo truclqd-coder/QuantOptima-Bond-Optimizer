@@ -30,7 +30,6 @@ st.sidebar.markdown("Adjust return expectations and market assumptions to update
 views = {}
 
 with st.sidebar:
-    # --- SECTION 1: BAYESIAN CONVICTION ---
     st.subheader("🧠 Bayesian Conviction")
     tau = st.select_slider(
         "Confidence (τ)", 
@@ -44,38 +43,16 @@ with st.sidebar:
     
     st.divider()
     
-    # --- SECTION 2: STABLE ASSET EXPECTATIONS ---
     st.subheader("🏦 Stable Asset Expectations")
-    
-    views["MUNI_BOND"] = st.slider(
-        "MUNI_BOND (%)", 0.0, 15.0, 4.0, step=0.5, key="s_muni",
-        help="**Municipal Bonds:** Debt instruments used for public projects. Often tax-exempt, they represent a 'Defensive' play with lower yields but higher after-tax stability compared to taxable corporates."
-    ) / 100
-    
-    views["US_TREASURY_10Y"] = st.slider(
-        "US_TREASURY_10Y (%)", 0.0, 15.0, 4.0, step=0.5, key="s_ust",
-        help="**10-Year US Treasury:** Often called the 'Risk-Free Rate.' Adjusting this reflects your outlook on long-term inflation and GDP growth. It acts as the fundamental anchor for all other interest rates."
-    ) / 100
-    
-    views["CORP_BOND_AAA"] = st.slider(
-        "CORP_BOND_AAA (%)", 0.0, 15.0, 5.0, step=0.5, key="s_aaa",
-        help="**AAA Corporate Bonds:** Prime-grade debt from the most stable companies. The 'Spread' (yield difference) between this and Treasuries represents the market's price for private-sector credit risk."
-    ) / 100
+    views["MUNI_BOND"] = st.slider("MUNI_BOND (%)", 0.0, 15.0, 4.0, step=0.5, key="s_muni", help="**Municipal Bonds:** Debt issued by state or local governments. Offers tax-advantaged stability.") / 100
+    views["US_TREASURY_10Y"] = st.slider("US_TREASURY_10Y (%)", 0.0, 15.0, 4.0, step=0.5, key="s_ust", help="**10-Year US Treasury:** The global benchmark for risk-free assets.") / 100
+    views["CORP_BOND_AAA"] = st.slider("CORP_BOND_AAA (%)", 0.0, 15.0, 5.0, step=0.5, key="s_aaa", help="**AAA Corporate Bonds:** Prime-grade debt with the lowest risk of default.") / 100
 
     st.divider()
 
-    # --- SECTION 3: HIGH-YIELD EXPECTATIONS ---
     st.subheader("🔥 High-Yield Expectations")
-    
-    views["HIGH_YIELD_BB"] = st.slider(
-        "HIGH_YIELD_BB (%)", 0.0, 15.0, 7.0, step=0.5, key="s_hy",
-        help="**High Yield (BB):** Also known as 'Speculative Grade.' These are highly sensitive to corporate earnings. Adjusting this reflects a 'Risk-On' or 'Risk-Off' stance regarding mid-sized corporate stability."
-    ) / 100
-    
-    views["EM_SOVEREIGN"] = st.slider(
-        "EM_SOVEREIGN (%)", 0.0, 15.0, 8.0, step=0.5, key="s_em",
-        help="**Emerging Market Sovereign:** Debt issued by developing nations. This represents a 'Growth' play. Adjustments mirror expectations for global liquidity, dollar strength, and geopolitical stability."
-    ) / 100
+    views["HIGH_YIELD_BB"] = st.slider("HIGH_YIELD_BB (%)", 0.0, 15.0, 7.0, step=0.5, key="s_hy", help="**High Yield (BB):** Sensitive to corporate earnings; higher income potential in exchange for credit risk.") / 100
+    views["EM_SOVEREIGN"] = st.slider("EM_SOVEREIGN (%)", 0.0, 15.0, 8.0, step=0.5, key="s_em", help="**Emerging Market Sovereign:** Growth play exposed to geopolitical risks and currency fluctuations.") / 100
 
 # --- 4. MAIN DASHBOARD ---
 st.title("⚖️ QuantOptima: Black-Litterman Bond Optimizer")
@@ -87,11 +64,10 @@ try:
     S = risk_models.sample_cov(prices_df)
     delta = 2.5 
     prior_returns = black_litterman.market_implied_prior_returns(mkt_caps, delta, S)
-    
     bl = BlackLittermanModel(S, pi=prior_returns, absolute_views=views, tau=tau)
     bl_rets = bl.bl_returns()
-    
     ef = EfficientFrontier(bl_rets, S)
+    
     try:
         weights = ef.max_sharpe(risk_free_rate=0.0)
     except:
@@ -126,9 +102,30 @@ try:
         opt_w = [cleaned_weights[t] for t in cleaned_weights.keys()]
         
         fig_bar = go.Figure()
-        fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=mkt_w, name="Market Equilibrium (Prior)", marker_color='#E2E8F0'))
-        fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=opt_w, name="AI-Optimized Weights (Posterior)", marker_color='#3182CE'))
-        fig_bar.update_layout(barmode='group', height=350, legend=dict(orientation="h", y=1.1))
+        # Market Equilibrium Trace
+        fig_bar.add_trace(go.Bar(
+            x=list(cleaned_weights.keys()), 
+            y=mkt_w, 
+            name="Market Equilibrium (Prior)", 
+            marker_color='#E2E8F0',
+            text=[f"{val:.1%}" for val in mkt_w],
+            textposition='auto'
+        ))
+        # AI-Optimized Trace
+        fig_bar.add_trace(go.Bar(
+            x=list(cleaned_weights.keys()), 
+            y=opt_w, 
+            name="AI-Optimized Weights (Posterior)", 
+            marker_color='#3182CE',
+            text=[f"{val:.1%}" for val in opt_w],
+            textposition='auto'
+        ))
+        fig_bar.update_layout(
+            barmode='group', 
+            height=400, 
+            legend=dict(orientation="h", y=1.1),
+            yaxis_tickformat=".0%" # Format Y-axis as percentage
+        )
         st.plotly_chart(fig_bar, use_container_width=True)
     
     with col2:
