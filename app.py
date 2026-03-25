@@ -24,8 +24,8 @@ def get_bond_market_data():
 prices_df, mkt_caps, durations = get_bond_market_data()
 
 # --- 3. SIDEBAR: BAYESIAN AI CALIBRATION ---
-st.sidebar.header("🤖 Bayesian AI Calibration")
-st.sidebar.markdown("Define your market outlook to update the generative inference engine.")
+st.sidebar.header("🤖 AI Calibration")
+st.sidebar.markdown("Define your market outlook to update the Bayesian generative inference engine.")
 
 views = {}
 
