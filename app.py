@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from pypfopt import black_litterman, risk_models, BlackLittermanModel, EfficientFrontier
 
 # --- 1. APP CONFIGURATION ---
-st.set_page_config(page_title="QuantOptima | Bayesian AI Optimizer", layout="wide")
+st.set_page_config(page_title="QuantOptima | Generative Bayesian Optimizer", layout="wide")
 
 # --- 2. DATA GENERATION ---
 @st.cache_data
@@ -23,20 +23,20 @@ def get_bond_market_data():
 
 prices_df, mkt_caps, durations = get_bond_market_data()
 
-# --- 3. SIDEBAR: BAYESIAN AI CALIBRATION ---
-st.sidebar.header("🕹️ Bayesian AI Calibration")
-st.sidebar.markdown("Adjust return expectations and market assumptions to update the inference model.")
+# --- 3. SIDEBAR: GENERATIVE BAYESIAN CALIBRATION ---
+st.sidebar.header("🤖 Generative Bayesian Model")
+st.sidebar.markdown("Adjust return expectations and market assumptions to update the Generative Bayesian model.")
 
 views = {}
 
 with st.sidebar:
-    # --- CATEGORY 1: CONVICTION ---
-    st.subheader("🧠 Model Conviction")
+    # --- CATEGORY 1: MODEL CONVICTION ---
+    st.subheader("🧠 Bayesian Conviction")
     tau = st.select_slider(
-        "Bayesian Confidence (τ)", 
+        "Confidence (τ)", 
         options=[0.01, 0.05, 0.1], 
         value=0.05,
-        help="**Bayesian Confidence:** Adjust how much the AI trusts your updated expectations versus historical market equilibrium."
+        help="**Bayesian Confidence (τ):** A hyperparameter representing the certainty of the input views relative to the market prior. A higher value gives more weight to the user's specific expectations in the final posterior distribution."
     )
     
     st.divider()
@@ -46,17 +46,17 @@ with st.sidebar:
     
     views["MUNI_BOND"] = st.slider(
         "MUNI_BOND (%)", 0.0, 15.0, 4.0, step=0.5, key="s_muni",
-        help="Adjust the expected annual return for tax-exempt local government bonds."
+        help="**Municipal Bonds:** Debt securities issued by state or local governments. They generally offer lower yields due to their tax-exempt status and are a cornerstone for lower-volatility, income-focused fixed income portfolios."
     ) / 100
     
     views["US_TREASURY_10Y"] = st.slider(
         "US_TREASURY_10Y (%)", 0.0, 15.0, 4.0, step=0.5, key="s_ust",
-        help="Adjust the return expectation for the 10-Year US Treasury benchmark."
+        help="**10-Year US Treasury:** The global benchmark for 'risk-free' returns. Its yield reflects market expectations for long-term inflation and economic growth, serving as the primary anchor for the entire yield curve."
     ) / 100
     
     views["CORP_BOND_AAA"] = st.slider(
         "CORP_BOND_AAA (%)", 0.0, 15.0, 5.0, step=0.5, key="s_aaa",
-        help="Adjust the return expectation for highest-quality corporate debt."
+        help="**AAA Corporate Bonds:** The highest tier of private-sector debt. These bonds represent companies with the strongest capacity to meet financial commitments, offering a small yield premium (spread) over government debt."
     ) / 100
 
     st.divider()
@@ -66,17 +66,17 @@ with st.sidebar:
     
     views["HIGH_YIELD_BB"] = st.slider(
         "HIGH_YIELD_BB (%)", 0.0, 15.0, 7.0, step=0.5, key="s_hy",
-        help="Adjust the return expectation for 'Crossover' corporate debt."
+        help="**High Yield (BB):** 'Crossover' debt that sits just below investment grade. These bonds offer higher income potential to compensate for increased default risk and higher sensitivity to corporate credit cycles."
     ) / 100
     
     views["EM_SOVEREIGN"] = st.slider(
         "EM_SOVEREIGN (%)", 0.0, 15.0, 8.0, step=0.5, key="s_em",
-        help="Adjust the return expectation for Emerging Market government bonds."
+        help="**Emerging Market Sovereign:** Debt issued by governments of developing nations. These assets provide significant yield premiums but are sensitive to geopolitical stability, currency fluctuations, and global liquidity."
     ) / 100
 
 # --- 4. MAIN DASHBOARD ---
 st.title("⚖️ QuantOptima: Black-Litterman Bond Optimizer")
-st.info("🧬 **AI Status:** Bayesian Inference active. Synthesizing market equilibrium with user-defined expectations.")
+st.info("🧬 **AI Engine Status:** Generative Bayesian Inference active. Updating portfolio distribution based on return expectations.")
 st.markdown("---")
 
 try:
@@ -93,22 +93,22 @@ try:
         weights = ef.max_sharpe(risk_free_rate=0.0)
     except:
         weights = ef.min_volatility()
-        st.warning("⚠️ Optimization fallback: Displaying Minimum Volatility portfolio.")
+        st.warning("⚠️ Optimization failed to converge on Max Sharpe. Showing Minimum Volatility weights.")
 
     cleaned_weights = ef.clean_weights()
     ret, vol, sharpe = ef.portfolio_performance(risk_free_rate=0.0)
 
     # --- ROW 1: YIELD CURVE ---
-    st.header("📈 AI-Optimized Yield Curve")
+    st.header("📈 Generative Term Structure Update")
     curve_df = pd.DataFrame({
         "Duration": durations,
-        "Market Equilibrium": prior_returns.values * 100,
-        "Updated Posterior": bl_rets.values * 100
+        "Market Prior": prior_returns.values * 100,
+        "Posterior (AI)": bl_rets.values * 100
     }).sort_values("Duration")
 
     fig_curve = go.Figure()
-    fig_curve.add_trace(go.Scatter(x=curve_df["Duration"], y=curve_df["Market Equilibrium"], mode='lines+markers', name="Market Prior (Equilibrium)", line=dict(color='#CBD5E0', dash='dash')))
-    fig_curve.add_trace(go.Scatter(x=curve_df["Duration"], y=curve_df["Updated Posterior"], mode='lines+markers', name="Inferred Posterior (Updated)", line=dict(color='#3182CE', width=4)))
+    fig_curve.add_trace(go.Scatter(x=curve_df["Duration"], y=curve_df["Market Prior"], mode='lines+markers', name="Market Equilibrium (Prior)", line=dict(color='#CBD5E0', dash='dash')))
+    fig_curve.add_trace(go.Scatter(x=curve_df["Duration"], y=curve_df["Posterior (AI)"], mode='lines+markers', name="Generated Posterior", line=dict(color='#3182CE', width=4)))
     fig_curve.update_layout(height=400, xaxis_title="Duration (Years)", yaxis_title="Exp. Return (%)", legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"))
     st.plotly_chart(fig_curve, use_container_width=True)
 
@@ -124,13 +124,13 @@ try:
         
         fig_bar = go.Figure()
         fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=mkt_w, name="Market Equilibrium", marker_color='#E2E8F0'))
-        fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=opt_w, name="Updated Weights", marker_color='#3182CE'))
+        fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=opt_w, name="Optimized Posterior Weights", marker_color='#3182CE'))
         fig_bar.update_layout(barmode='group', height=350, legend=dict(orientation="h", y=1.1))
         st.plotly_chart(fig_bar, use_container_width=True)
     
     with col2:
         st.subheader("Return Analysis (%)")
-        st.dataframe(pd.DataFrame({"Market Equilibrium": prior_returns, "Updated Posterior": bl_rets}).style.format("{:.2%}"), use_container_width=True)
+        st.dataframe(pd.DataFrame({"Neutral Prior": prior_returns, "Posterior (AI)": bl_rets}).style.format("{:.2%}"), use_container_width=True)
 
     # --- ROW 3: KPI METRICS ---
     st.divider()
