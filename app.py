@@ -33,7 +33,7 @@ for ticker in ["HIGH_YIELD_BB", "EM_SOVEREIGN"]:
 st.sidebar.divider()
 st.sidebar.header("🛡️ Risk Controls")
 tau = st.sidebar.select_slider("View Confidence (Tau)", options=[0.01, 0.05, 0.1], value=0.05, 
-                               help="Lower Tau means you trust the Market more. Higher Tau means you trust your AI views more.")
+                               help="Lower Tau = Trust the Market more. Higher Tau = Trust your AI views more.")
 
 run_opt = st.sidebar.button("🚀 Run AI Optimization")
 
@@ -41,23 +41,21 @@ run_opt = st.sidebar.button("🚀 Run AI Optimization")
 st.title("⚖️ QuantOptima: Black-Litterman Bond Optimizer")
 
 if not run_opt:
-    st.info("👈 **Step 1:** Adjust your views in the sidebar and click **'Run AI Optimization'**.")
+    st.info("👈 **Step 1:** Adjust your views in the sidebar and click **'Run AI Optimization'** to begin.")
     st.subheader("Current Market Equilibrium (Neutral Benchmark)")
     mkt_total = sum(mkt_caps.values())
     mkt_weights = pd.Series({k: v/mkt_total for k, v in mkt_caps.items()})
     st.bar_chart(mkt_weights)
 else:
     try:
-        # A. Math Engine
+        # --- THE MATHEMATICAL ENGINE ---
         S = risk_models.sample_cov(prices_df)
         delta = 2.5
         prior_returns = black_litterman.market_implied_prior_returns(mkt_caps, delta, S)
 
-        # B. BL Model (Blending the Prior + Views)
         bl = BlackLittermanModel(S, pi=prior_returns, absolute_views=views, tau=tau)
         bl_rets = bl.bl_returns()
 
-        # C. Optimization (Efficient Frontier)
         ef = EfficientFrontier(bl_rets, S)
         weights = ef.max_sharpe()
         cleaned_weights = ef.clean_weights()
@@ -70,7 +68,6 @@ else:
         
         with col1:
             st.subheader("Portfolio Weight Rebalancing")
-            # Compare Benchmark vs BL
             mkt_total = sum(mkt_caps.values())
             mkt_w = [mkt_caps[t]/mkt_total for t in cleaned_weights.keys()]
             opt_w = [cleaned_weights[t] for t in cleaned_weights.keys()]
@@ -78,7 +75,7 @@ else:
             fig = go.Figure()
             fig.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=mkt_w, name="Market Benchmark", marker_color='lightgrey'))
             fig.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=opt_w, name="AI Optimized", marker_color='#1f77b4'))
-            fig.update_layout(barmode='group', height=400)
+            fig.update_layout(barmode='group', height=400, margin=dict(l=0, r=0, t=30, b=0))
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
@@ -86,6 +83,10 @@ else:
             rets_df = pd.DataFrame({"Market Implied": prior_returns, "BL Posterior": bl_rets})
             st.write(rets_df.style.format("{:.2%}"), use_container_width=True)
             st.success("Optimization Successful!")
+
+        st.divider()
+        st.subheader("💡 Analysis")
+        st.write("The chart above shows how the **Black-Litterman** model 'tilts' the portfolio. Notice that sectors where you expressed a high return view have gained weight relative to the benchmark, while the model maintains diversification to manage risk.")
 
     except Exception as e:
         st.error(f"Mathematical Error: {e}")
