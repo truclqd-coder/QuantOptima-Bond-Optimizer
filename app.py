@@ -32,61 +32,54 @@ for ticker in ["HIGH_YIELD_BB", "EM_SOVEREIGN"]:
 
 st.sidebar.divider()
 st.sidebar.header("🛡️ Risk Controls")
-tau = st.sidebar.select_slider("View Confidence (Tau)", options=[0.01, 0.05, 0.1], value=0.05, 
-                               help="Lower Tau = Trust the Market more. Higher Tau = Trust your AI views more.")
-
-run_opt = st.sidebar.button("🚀 Run AI Optimization")
+tau = st.sidebar.select_slider("View Confidence (Tau)", options=[0.01, 0.05, 0.1], value=0.05)
 
 # --- 4. MAIN PAGE ---
 st.title("⚖️ QuantOptima: Black-Litterman Bond Optimizer")
 
-if not run_opt:
-    st.info("👈 **Step 1:** Adjust your views in the sidebar and click **'Run AI Optimization'** to begin.")
-    st.subheader("Current Market Equilibrium (Neutral Benchmark)")
-    mkt_total = sum(mkt_caps.values())
-    mkt_weights = pd.Series({k: v/mkt_total for k, v in mkt_caps.items()})
-    st.bar_chart(mkt_weights)
-else:
-    try:
-        # --- THE MATHEMATICAL ENGINE ---
-        S = risk_models.sample_cov(prices_df)
-        delta = 2.5
-        prior_returns = black_litterman.market_implied_prior_returns(mkt_caps, delta, S)
+try:
+    # --- THE MATHEMATICAL ENGINE ---
+    S = risk_models.sample_cov(prices_df)
+    delta = 2.5
+    prior_returns = black_litterman.market_implied_prior_returns(mkt_caps, delta, S)
 
-        bl = BlackLittermanModel(S, pi=prior_returns, absolute_views=views, tau=tau)
-        bl_rets = bl.bl_returns()
+    bl = BlackLittermanModel(S, pi=prior_returns, absolute_views=views, tau=tau)
+    bl_rets = bl.bl_returns()
 
-        ef = EfficientFrontier(bl_rets, S)
-        weights = ef.max_sharpe()
-        cleaned_weights = ef.clean_weights()
+    ef = EfficientFrontier(bl_rets, S)
+    weights = ef.max_sharpe()
+    cleaned_weights = ef.clean_weights()
 
-        # --- STEP 2: DISPLAY RESULTS ---
-        st.header("🎯 Step 2: Optimized Results")
-        st.markdown("The model has blended your views with market equilibrium to find the **Max Sharpe Ratio**.")
+    # --- STEP 2: DISPLAY RESULTS (Always Visible) ---
+    st.header("🎯 Step 2: Optimized Results")
+    st.markdown("The chart below compares the **Neutral Market Benchmark** against your **AI-Adjusted Portfolio**.")
 
-        col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("Portfolio Weight Rebalancing")
+        mkt_total = sum(mkt_caps.values())
+        mkt_w = [mkt_caps[t]/mkt_total for t in cleaned_weights.keys()]
+        opt_w = [cleaned_weights[t] for t in cleaned_weights.keys()]
         
-        with col1:
-            st.subheader("Portfolio Weight Rebalancing")
-            mkt_total = sum(mkt_caps.values())
-            mkt_w = [mkt_caps[t]/mkt_total for t in cleaned_weights.keys()]
-            opt_w = [cleaned_weights[t] for t in cleaned_weights.keys()]
-            
-            fig = go.Figure()
-            fig.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=mkt_w, name="Market Benchmark", marker_color='lightgrey'))
-            fig.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=opt_w, name="AI Optimized", marker_color='#1f77b4'))
-            fig.update_layout(barmode='group', height=400, margin=dict(l=0, r=0, t=30, b=0))
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            st.subheader("Blended Returns")
-            rets_df = pd.DataFrame({"Market Implied": prior_returns, "BL Posterior": bl_rets})
-            st.write(rets_df.style.format("{:.2%}"), use_container_width=True)
-            st.success("Optimization Successful!")
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=mkt_w, name="Market Benchmark", marker_color='#CBD5E0'))
+        fig.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=opt_w, name="AI Optimized", marker_color='#3182CE'))
+        fig.update_layout(barmode='group', height=400, margin=dict(l=0, r=0, t=30, b=0), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        st.subheader("Blended Returns (%)")
+        rets_df = pd.DataFrame({
+            "Market Implied": prior_returns, 
+            "BL Posterior": bl_rets
+        })
+        st.dataframe(rets_df.style.format("{:.2%}"), use_container_width=True)
 
-        st.divider()
-        st.subheader("💡 Analysis")
-        st.write("The chart above shows how the **Black-Litterman** model 'tilts' the portfolio. Notice that sectors where you expressed a high return view have gained weight relative to the benchmark, while the model maintains diversification to manage risk.")
+    st.divider()
+    st.subheader("💡 Analysis")
+    st.write("Notice how the model mathematically 'tilts' the portfolio toward your views while respecting the market's covariance structure. This prevents the extreme, concentrated bets often found in standard optimizers.")
 
-    except Exception as e:
-        st.error(f"Mathematical Error: {e}")
+except Exception as e:
+    st.error(f"Mathematical Error: {e}")
+    st.warning("This can happen if views are extremely high. Try lowering the sliders in Step 1.")
