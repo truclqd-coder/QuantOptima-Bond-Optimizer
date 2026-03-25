@@ -132,4 +132,21 @@ try:
         fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=mkt_w, name="Market Equilibrium", marker_color='#E2E8F0'))
         fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=opt_w, name="Post-View Optimization", marker_color='#3182CE'))
         fig_bar.update_layout(barmode='group', height=350, legend=dict(orientation="h", y=1.1))
-        st.plotly_chart(fig_bar, use_container_width=
+        st.plotly_chart(fig_bar, use_container_width=True)
+    
+    with col2:
+        st.subheader("Return Profile (%)")
+        st.dataframe(pd.DataFrame({
+            "Market Prior": prior_returns, 
+            "Blended Posterior": bl_rets
+        }).style.format("{:.2%}"), use_container_width=True)
+
+    # --- ROW 3: KPI METRICS ---
+    st.divider()
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Exp. Annual Return", f"{ret:.2%}")
+    k2.metric("Portfolio Volatility", f"{vol:.2%}")
+    k3.metric("Sharpe Ratio", f"{sharpe:.2f}")
+
+except Exception as e:
+    st.error(f"🚨 Model Error: {e}")
