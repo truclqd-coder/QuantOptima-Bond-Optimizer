@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from pypfopt import black_litterman, risk_models, BlackLittermanModel, EfficientFrontier
 
 # --- 1. APP CONFIGURATION ---
-st.set_page_config(page_title="QuantOptima | Generative Bayesian Optimizer", layout="wide")
+st.set_page_config(page_title="QuantOptima | AI Model Optimizer", layout="wide")
 
 # --- 2. DATA GENERATION (Simulated Bond Market) ---
 @st.cache_data
@@ -23,14 +23,14 @@ def get_bond_market_data():
 
 prices_df, mkt_caps, durations = get_bond_market_data()
 
-# --- 3. SIDEBAR: GENERATIVE BAYESIAN MODEL CALIBRATION ---
-st.sidebar.header("🤖 Generative Bayesian Model Calibration")
-st.sidebar.markdown("Adjust return expectations and market assumptions to update the Generative Bayesian model.")
+# --- 3. SIDEBAR: AI MODEL CALIBRATION ---
+st.sidebar.header("🤖 AI Model Calibration")
+st.sidebar.markdown("Adjust return expectations and market assumptions to update the AI model.")
 
 views = {}
 
 with st.sidebar:
-    # --- SECTION 1: BAYESIAN CONVICTION ---
+    # --- SECTION 1: CONVICTION ---
     st.subheader("🧠 Bayesian Conviction")
     tau = st.select_slider(
         "Confidence (τ)", 
@@ -76,7 +76,7 @@ with st.sidebar:
 
 # --- 4. MAIN DASHBOARD ---
 st.title("⚖️ QuantOptima: Black-Litterman Bond Optimizer")
-st.info("🧬 **AI Engine Status:** Generative Bayesian Inference active. Updating model based on return expectations.")
+st.info("🧬 **AI Engine Status:** Bayesian Inference active. Updating model based on return expectations.")
 st.markdown("---")
 
 try:
@@ -85,22 +85,20 @@ try:
     delta = 2.5 
     prior_returns = black_litterman.market_implied_prior_returns(mkt_caps, delta, S)
     
-    # Generate Posterior Returns
     bl = BlackLittermanModel(S, pi=prior_returns, absolute_views=views, tau=tau)
     bl_rets = bl.bl_returns()
     
-    # Efficient Frontier Optimization
     ef = EfficientFrontier(bl_rets, S)
     try:
         weights = ef.max_sharpe(risk_free_rate=0.0)
     except:
         weights = ef.min_volatility()
-        st.warning("⚠️ Optimization Warning: Displaying Minimum Volatility weights for current configuration.")
+        st.warning("⚠️ Optimization Warning: Displaying Minimum Volatility weights.")
 
     cleaned_weights = ef.clean_weights()
     ret, vol, sharpe = ef.portfolio_performance(risk_free_rate=0.0)
 
-    # --- ROW 1: YIELD CURVE OPTIMIZATION (Primary Visual) ---
+    # --- ROW 1: YIELD CURVE OPTIMIZATION ---
     st.header("📈 Yield Curve Optimization")
     curve_df = pd.DataFrame({
         "Duration": durations,
@@ -110,59 +108,4 @@ try:
 
     fig_curve = go.Figure()
     fig_curve.add_trace(go.Scatter(
-        x=curve_df["Duration"], 
-        y=curve_df["Market History"], 
-        mode='lines+markers', 
-        name="Market Equilibrium (Prior)", 
-        line=dict(color='#CBD5E0', dash='dash')
-    ))
-    fig_curve.add_trace(go.Scatter(
-        x=curve_df["Duration"], 
-        y=curve_df["AI Optimized"], 
-        mode='lines+markers', 
-        name="AI-Optimized Posterior", 
-        line=dict(color='#3182CE', width=4)
-    ))
-    fig_curve.update_layout(
-        height=400, 
-        xaxis_title="Duration (Years)", 
-        yaxis_title="Expected Return (%)", 
-        legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center")
-    )
-    st.plotly_chart(fig_curve, use_container_width=True)
-
-    # --- ROW 2: ALLOCATION & DATA ---
-    st.divider()
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.subheader("Market Equilibrium vs. AI-Optimized Weights")
-        mkt_total = sum(mkt_caps.values())
-        mkt_w = [mkt_caps[t]/mkt_total for t in cleaned_weights.keys()]
-        opt_w = [cleaned_weights[t] for t in cleaned_weights.keys()]
-        
-        fig_bar = go.Figure()
-        fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=mkt_w, name="Market Equilibrium (Prior)", marker_color='#E2E8F0'))
-        fig_bar.add_trace(go.Bar(x=list(cleaned_weights.keys()), y=opt_w, name="AI-Optimized Weights (Posterior)", marker_color='#3182CE'))
-        fig_bar.update_layout(barmode='group', height=350, legend=dict(orientation="h", y=1.1))
-        st.plotly_chart(fig_bar, use_container_width=True)
-    
-    with col2:
-        st.subheader("Expected Return Comparison")
-        st.dataframe(
-            pd.DataFrame({
-                "Market Equilibrium": prior_returns, 
-                "AI-Optimized": bl_rets
-            }).style.format("{:.2%}"), 
-            use_container_width=True
-        )
-
-    # --- ROW 3: KPI METRICS ---
-    st.divider()
-    k1, k2, k3 = st.columns(3)
-    k1.metric("Exp. Annual Return", f"{ret:.2%}")
-    k2.metric("Portfolio Volatility", f"{vol:.2%}")
-    k3.metric("Sharpe Ratio", f"{sharpe:.2f}")
-
-except Exception as e:
-    st.error(f"🚨 Model Error: {e}")
+        x=curve_df["Duration"],
